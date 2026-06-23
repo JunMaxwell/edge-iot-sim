@@ -1,0 +1,12 @@
+{
+  "name": "@repo/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "*",
+    "typescript": "^5.8.3"
+  }
+}
