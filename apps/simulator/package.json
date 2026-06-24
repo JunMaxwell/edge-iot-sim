@@ -4,15 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@repo/shared-types": "*",
     "amqplib": "^0.10.5"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
     "@repo/tsconfig": "*",
     "@types/amqplib": "^0.10.7",
+    "eslint": "^9.0.0",
     "typescript": "^5.8.3"
   }
 }

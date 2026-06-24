@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun --watch src/main.ts",
     "start": "bun src/main.ts",
-    "build": "tsc --project tsconfig.json"
+    "build": "tsc --project tsconfig.json",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -19,10 +20,12 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
     "@repo/tsconfig": "*",
     "@types/amqplib": "^0.10.7",
     "@types/express": "^5.0.3",
     "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
     "typescript": "^5.8.3"
   }
 }
