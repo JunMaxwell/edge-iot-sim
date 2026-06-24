@@ -13,11 +13,11 @@ import {
 import { Subscription } from "rxjs";
 import { Server, Socket } from "socket.io";
 
+import { TelemetryService } from "../telemetry/telemetry.service";
 import { SensorsService } from "./sensors.service";
 
-// Transport layer: bridges SensorsService's update stream onto Socket.IO.
-// Depends on the service (one direction) — sends a snapshot to each new client
-// and broadcasts every subsequent reading to all clients.
+// Transport layer: bridges the throttled TelemetryService stream onto Socket.IO.
+// Uses SensorsService only for the initial snapshot on new connections.
 @WebSocketGateway({
   cors: { origin: process.env.CORS_ORIGIN ?? "http://localhost:3003" },
 })
@@ -29,11 +29,14 @@ export class SensorsGateway
 
   private subscription: Subscription | null = null;
 
-  constructor(private readonly sensors: SensorsService) {}
+  constructor(
+    private readonly sensors: SensorsService,
+    private readonly telemetry: TelemetryService,
+  ) {}
 
   afterInit(): void {
-    // Fan every reading out to all connected clients.
-    this.subscription = this.sensors.updates$.subscribe((state) => {
+    // Fan the throttled readings out to all connected clients.
+    this.subscription = this.telemetry.aggregatedUpdates$.subscribe((state) => {
       this.server.emit(SOCKET_EVENTS.SENSOR_UPDATE, state);
     });
   }
