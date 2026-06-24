@@ -9,6 +9,7 @@ import { FacilityFloor } from "../facility-floor/facility-floor";
 import { FacilityWalls } from "../facility-walls/facility-walls";
 import { SceneLighting } from "../scene-lighting/scene-lighting";
 import { SensorNode } from "../sensor-node/sensor-node";
+import { ServerRacks } from "../server-racks/server-racks";
 import { StalenessWatcher } from "../staleness-watcher/staleness-watcher";
 import { ZoneRegions } from "../zone-regions/zone-regions";
 
@@ -40,6 +41,7 @@ export function SensorScene() {
       <FacilityFloor />
       <ZoneRegions />
       <FacilityWalls />
+      <ServerRacks />
       <StalenessWatcher />
       {sensorIds.map((id) => (
         <SensorNode key={id} id={id} />
