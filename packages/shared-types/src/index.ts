@@ -53,6 +53,16 @@ export const SOCKET_EVENTS = {
   SENSOR_BATCH: "sensor:batch",
 } as const;
 
+// Typed Socket.IO event contract shared by the API gateway (emitter) and the
+// web client (listener). Keeps both ends in sync with one definition.
+export interface ServerToClientEvents {
+  [SOCKET_EVENTS.SENSOR_UPDATE]: (state: SensorState) => void;
+  [SOCKET_EVENTS.SENSOR_BATCH]: (states: SensorState[]) => void;
+}
+
+// No client→server events in Phase 3.
+export type ClientToServerEvents = Record<string, never>;
+
 // RabbitMQ topology — single source of truth shared by the simulator (publisher)
 // and the API (consumer). A topic exchange lets the API subscribe selectively by
 // pattern (e.g. "sensor.hvac.*").
