@@ -105,6 +105,8 @@ export type ClientToServerEvents = Record<string, never>;
 // and the API (consumer). A topic exchange lets the API subscribe selectively by
 // pattern (e.g. "sensor.hvac.*").
 export const IOT_EXCHANGE = "iot.sensors";
+export const IOT_DLX = "iot.dlx";
+export const IOT_DLQ = "iot.dlq";
 
 export enum RoutingKey {
   HVAC_TEMPERATURE = "sensor.hvac.temperature",

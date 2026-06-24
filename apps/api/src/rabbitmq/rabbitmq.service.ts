@@ -5,7 +5,8 @@ import {
   OnModuleInit,
 } from "@nestjs/common";
 import * as amqp from "amqplib";
-import { IOT_EXCHANGE } from "@repo/shared-types";
+import { IOT_DLQ, IOT_DLX, IOT_EXCHANGE } from "@repo/shared-types";
+import { withRetry } from "./utils/retry";
 
 import {
   BASE_BACKOFF_MS,
@@ -41,10 +42,12 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     await this.connect();
-    await this.channel?.assertExchange(IOT_EXCHANGE, "topic", {
-      durable: true,
-    });
+    await this.channel?.assertExchange(IOT_EXCHANGE, "topic", { durable: true });
+    await this.channel?.assertExchange(IOT_DLX, "topic", { durable: true });
+    await this.channel?.assertQueue(IOT_DLQ, { durable: true });
+    await this.channel?.bindQueue(IOT_DLQ, IOT_DLX, "#");
     this.logger.log(`Connected to ${this.url}, exchange "${IOT_EXCHANGE}" ready`);
+    this.logger.log(`DLQ "${IOT_DLQ}" bound to DLX "${IOT_DLX}"`);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -70,18 +73,18 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
     }
     const channel = this.channel;
 
-    await channel.assertQueue(queue, { durable: true });
+    await channel.assertQueue(queue, { durable: true, deadLetterExchange: IOT_DLX });
     await channel.bindQueue(queue, IOT_EXCHANGE, pattern);
     await channel.consume(queue, async (msg) => {
       if (!msg) return;
       try {
-        await handler(msg.content, msg.fields.routingKey);
+        await withRetry(() => handler(msg.content, msg.fields.routingKey));
         channel.ack(msg);
       } catch (err) {
         this.logger.error(
-          `Handler failed for queue "${queue}": ${
+          `Handler failed permanently for queue "${queue}": ${
             err instanceof Error ? err.message : String(err)
-          }`,
+          }. Sending to DLQ.`,
         );
         channel.nack(msg, false, false);
       }
