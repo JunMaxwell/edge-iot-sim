@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Map the next/font CSS variables (set in layout.tsx) into Tailwind's theme so
+   `font-sans` / `font-mono` resolve to Inter / JetBrains Mono. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  overflow: hidden; /* full-screen 3D canvas; panels scroll internally */
+  background-color: #0f172a;
+  font-family: var(--font-sans);
+}
+
+/* Translucent slate panel with a blurred backdrop — the dashboard's signature
+   surface, ported from the BMS concept. */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom thin scrollbar for the alert feed. */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

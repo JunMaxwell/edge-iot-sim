@@ -47,6 +47,44 @@ export function deriveStatus(type: SensorType, value: number): SensorStatus {
   return SensorStatus.NORMAL;
 }
 
+// Spatial zones, derived from the routing-key namespace "sensor.<zone>.*".
+// A single source of truth so the API, simulator, and 3D dashboard agree on
+// which sensors live in which zone.
+export enum SensorZone {
+  HVAC = "hvac",
+  FLOOR = "floor",
+}
+
+// Maps "sensor.hvac.temperature" → SensorZone.HVAC. Falls back to FLOOR for any
+// non-HVAC namespace so an unknown sensor still lands somewhere visible.
+export function zoneForRoutingKey(routingKey: string): SensorZone {
+  return routingKey.startsWith(`sensor.${SensorZone.HVAC}.`)
+    ? SensorZone.HVAC
+    : SensorZone.FLOOR;
+}
+
+// Status colour palette (hex) — adopted from the BMS dashboard concept as the
+// single source of truth for both the 3D node materials and the overlay UI.
+export const STATUS_COLOR: Record<SensorStatus, string> = {
+  [SensorStatus.NORMAL]: "#10b981", // emerald
+  [SensorStatus.WARNING]: "#f59e0b", // amber
+  [SensorStatus.CRITICAL]: "#ef4444", // red
+  [SensorStatus.OFFLINE]: "#64748b", // slate
+};
+
+// A status-degradation event, raised when a sensor crosses into a worse status.
+// Drives the live alert feed in the dashboard overlay.
+export interface AlertEvent {
+  id: string;
+  sensorId: string;
+  type: SensorType;
+  fromStatus: SensorStatus;
+  toStatus: SensorStatus;
+  value: number;
+  unit: string;
+  timestamp: number;
+}
+
 // Socket.IO event names — single source of truth
 export const SOCKET_EVENTS = {
   SENSOR_UPDATE: "sensor:update",
