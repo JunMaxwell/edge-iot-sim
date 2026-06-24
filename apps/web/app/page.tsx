@@ -1,3 +1,4 @@
+import { ConnectingOverlay } from "../features/sensors/components/connecting-overlay/connecting-overlay";
 import { ConnectionStatus } from "../features/sensors/components/connection-status/connection-status";
 import { SensorSocketInit } from "../features/sensors/components/sensor-socket-init/sensor-socket-init";
 import { AlertFeed } from "../features/sensors/overlay/alert-feed/alert-feed";
@@ -13,6 +14,8 @@ export default function HomePage() {
     <main className="relative h-screen w-screen overflow-hidden">
       <SensorSocketInit />
       <SensorScene />
+
+      <ConnectingOverlay />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-6 p-6 md:flex-row">
         <ZonePanel />

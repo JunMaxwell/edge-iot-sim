@@ -1,9 +1,9 @@
-const VIEW_W = 100;
-const VIEW_H = 20;
+import { buildPoints, VIEW_H, VIEW_W } from "./build-points";
+
 const STROKE = "#3b82f6";
 
-// Tiny SVG trend line built from a sensor's value history. Normalises the series
-// into the viewBox; a flat/empty series renders a centred baseline.
+// Tiny SVG trend line built from a sensor's value history. The point maths lives
+// in the pure `buildPoints` helper (colocated, unit-tested); this is just markup.
 export function Sparkline({ values }: { values: number[] }) {
   const points = buildPoints(values);
 
@@ -33,30 +33,4 @@ export function Sparkline({ values }: { values: number[] }) {
       />
     </svg>
   );
-}
-
-// Maps values → "x,y x,y …" within the viewBox. Pure so it stays trivially
-// testable and allocation-light.
-function buildPoints(values: number[]): string {
-  if (values.length === 0) {
-    return `0,${VIEW_H / 2} ${VIEW_W},${VIEW_H / 2}`;
-  }
-  if (values.length === 1) {
-    const y = VIEW_H / 2;
-    return `0,${y} ${VIEW_W},${y}`;
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = VIEW_W / (values.length - 1);
-
-  return values
-    .map((value, index) => {
-      const x = index * step;
-      // Invert Y: SVG origin is top-left, higher value should sit higher.
-      const y = VIEW_H - ((value - min) / range) * VIEW_H;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
 }

@@ -1,7 +1,8 @@
 import { AlertEvent, SensorState, SensorStatus } from "@repo/shared-types";
 import { create } from "zustand";
 
-import { HISTORY_LENGTH, MAX_ALERTS, STATUS_SEVERITY } from "./constants";
+import { HISTORY_LENGTH, MAX_ALERTS } from "./constants";
+import { deriveDegradeAlert } from "./derive-alert/derive-alert";
 
 interface SensorStoreState {
   sensors: Record<string, SensorState>;
@@ -54,24 +55,16 @@ export const useSensorStore = create<SensorStoreState>((set) => ({
       const prevHistory = prev.history[state.id] ?? [];
       const nextHistory = [...prevHistory, state.value].slice(-HISTORY_LENGTH);
 
-      const degraded =
-        previous !== undefined &&
-        STATUS_SEVERITY[state.status] > STATUS_SEVERITY[previous.status];
+      // Raise an alert only when the status degrades to a worse severity level.
+      const alert = deriveDegradeAlert({
+        previous,
+        next: state,
+        seq: alertSeq,
+      });
+      if (alert) alertSeq += 1;
 
-      const alerts = degraded
-        ? [
-            {
-              id: `${state.id}-${state.lastUpdated}-${alertSeq++}`,
-              sensorId: state.id,
-              type: state.type,
-              fromStatus: previous.status,
-              toStatus: state.status,
-              value: state.value,
-              unit: state.unit,
-              timestamp: state.lastUpdated,
-            },
-            ...prev.alerts,
-          ].slice(0, MAX_ALERTS)
+      const alerts = alert
+        ? [alert, ...prev.alerts].slice(0, MAX_ALERTS)
         : prev.alerts;
 
       return {
