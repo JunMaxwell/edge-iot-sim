@@ -1,7 +1,8 @@
 "use client";
 
-import { STATUS_COLOR, zoneForRoutingKey } from "@repo/shared-types";
+import { SensorType, STATUS_COLOR, zoneForRoutingKey } from "@repo/shared-types";
 
+import { formatReading } from "../../format-reading";
 import { SENSOR_TYPE_LABEL, ZONE_LABEL } from "../../labels";
 import { formatRelative } from "../../relative-time";
 import { useSensorStore } from "../../sensor-store";
@@ -68,8 +69,14 @@ export function DeviceHud() {
               {SENSOR_TYPE_LABEL[sensor.type]}
             </p>
             <p className="mt-1 font-mono text-2xl text-slate-900">
-              {sensor.value}
-              <span className="ml-1 text-sm text-slate-500">{sensor.unit}</span>
+              {sensor.type === SensorType.MOTION ? (
+                formatReading({ type: sensor.type, value: sensor.value, unit: sensor.unit })
+              ) : (
+                <>
+                  {sensor.value}
+                  <span className="ml-1 text-sm text-slate-500">{sensor.unit}</span>
+                </>
+              )}
             </p>
             <p className="mt-1 text-[10px] text-slate-400">
               Updated {formatRelative(sensor.lastUpdated)}

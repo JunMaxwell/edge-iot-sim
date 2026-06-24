@@ -2,6 +2,7 @@
 
 import { AlertEvent, STATUS_COLOR } from "@repo/shared-types";
 
+import { formatReading } from "../../format-reading";
 import { SENSOR_TYPE_LABEL } from "../../labels";
 import { formatClock } from "../../relative-time";
 import { useSensorStore } from "../../sensor-store";
@@ -58,8 +59,8 @@ function AlertRow({ alert }: { alert: AlertEvent }) {
         Status degraded to {alert.toStatus.toUpperCase()}
       </div>
       <div className="text-xs text-slate-600">
-        {SENSOR_TYPE_LABEL[alert.type]} at {alert.value}
-        {alert.unit}
+        {SENSOR_TYPE_LABEL[alert.type]} ·{" "}
+        {formatReading({ type: alert.type, value: alert.value, unit: alert.unit })}
       </div>
     </button>
   );
