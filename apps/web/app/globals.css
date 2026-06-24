@@ -8,23 +8,23 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   overflow: hidden; /* full-screen 3D canvas; panels scroll internally */
-  background-color: #0f172a;
+  background-color: #f8fafc;
   font-family: var(--font-sans);
 }
 
-/* Translucent slate panel with a blurred backdrop — the dashboard's signature
-   surface, ported from the BMS concept. */
+/* Translucent frosted-glass panel — ported from the BMS concept's light theme. */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 /* Custom thin scrollbar for the alert feed. */
@@ -35,9 +35,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }

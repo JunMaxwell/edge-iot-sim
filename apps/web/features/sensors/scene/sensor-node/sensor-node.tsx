@@ -90,7 +90,7 @@ export function SensorNode({ id }: { id: string }) {
     >
       <mesh>
         <cylinderGeometry args={[0.5, 0.6, 0.4, 16]} />
-        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+        <meshStandardMaterial color="#94a3b8" metalness={0.5} roughness={0.3} />
       </mesh>
 
       <mesh ref={coreRef} position-y={0.2}>
@@ -105,7 +105,7 @@ export function SensorNode({ id }: { id: string }) {
 
       <mesh ref={ringRef} rotation-x={-Math.PI / 2} position-y={-0.15}>
         <ringGeometry args={[0.8, 0.9, 32]} />
-        <meshBasicMaterial ref={ringMatRef} color="#ffffff" transparent opacity={0} />
+        <meshBasicMaterial ref={ringMatRef} color="#334155" transparent opacity={0} />
       </mesh>
     </group>
   );

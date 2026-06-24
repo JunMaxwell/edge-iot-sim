@@ -10,7 +10,7 @@ export function ConnectionStatus() {
       style={{
         fontFamily: "monospace",
         fontSize: 14,
-        color: connected ? "#3ad07a" : "#e03030",
+        color: connected ? "#059669" : "#dc2626",
       }}
     >
       {connected ? "● live" : "○ disconnected"}

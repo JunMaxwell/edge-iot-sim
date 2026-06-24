@@ -11,9 +11,6 @@ import { Sparkline } from "../sparkline/sparkline";
 // zustand compares snapshots by identity, so `?? []` inline would loop forever.
 const EMPTY_HISTORY: number[] = [];
 
-// Bottom-centre HUD for the selected sensor: status, id, zone, the single live
-// metric, relative last-updated, and a value sparkline. Stays mounted and fades
-// via opacity (per concept) so there's no layout jump on open/close.
 export function DeviceHud() {
   const selectedId = useSensorStore((state) => state.selectedSensorId);
   const sensor = useSensorStore((state) =>
@@ -42,9 +39,9 @@ export function DeviceHud() {
                   className="h-2 w-2 rounded-full"
                   style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
                 />
-                <h3 className="font-mono text-base font-semibold text-white">{sensor.id}</h3>
+                <h3 className="font-mono text-base font-semibold text-slate-900">{sensor.id}</h3>
               </div>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 {ZONE_LABEL[zoneForRoutingKey(sensor.routingKey)]} ·{" "}
                 {SENSOR_TYPE_LABEL[sensor.type]}
               </p>
@@ -52,7 +49,7 @@ export function DeviceHud() {
             <button
               type="button"
               onClick={() => clearSensor()}
-              className="text-slate-500 transition-colors hover:text-white"
+              className="text-slate-400 transition-colors hover:text-slate-700"
               aria-label="Close"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,21 +63,21 @@ export function DeviceHud() {
             </button>
           </div>
 
-          <div className="mb-4 rounded-lg border border-slate-700/50 bg-slate-800/50 p-3">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">
+          <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] uppercase tracking-wide text-slate-400">
               {SENSOR_TYPE_LABEL[sensor.type]}
             </p>
-            <p className="mt-1 font-mono text-2xl text-white">
+            <p className="mt-1 font-mono text-2xl text-slate-900">
               {sensor.value}
-              <span className="ml-1 text-sm text-slate-400">{sensor.unit}</span>
+              <span className="ml-1 text-sm text-slate-500">{sensor.unit}</span>
             </p>
-            <p className="mt-1 text-[10px] text-slate-500">
+            <p className="mt-1 text-[10px] text-slate-400">
               Updated {formatRelative(sensor.lastUpdated)}
             </p>
           </div>
 
           <div className="mt-2">
-            <p className="mb-2 text-[10px] uppercase tracking-wide text-slate-500">Recent Trend</p>
+            <p className="mb-2 text-[10px] uppercase tracking-wide text-slate-400">Recent Trend</p>
             <div className="relative h-10 w-full">
               <Sparkline values={history} />
             </div>

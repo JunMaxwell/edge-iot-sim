@@ -2,7 +2,7 @@ import { SensorType } from "@repo/shared-types";
 
 // Connection / loop defaults (overridable via env — see .env.example)
 export const DEFAULT_RABBITMQ_URL = "amqp://guest:guest@localhost:5672";
-export const DEFAULT_EMIT_INTERVAL_MS = 500;
+export const DEFAULT_EMIT_INTERVAL_MS = 2000;
 
 // Initial-connect retry policy: exponential backoff, capped attempts.
 export const MAX_CONNECT_ATTEMPTS = 5;

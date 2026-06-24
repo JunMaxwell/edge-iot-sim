@@ -24,3 +24,7 @@ export const STATUS_SEVERITY: Record<SensorStatus, number> = {
 // Real sensor positions span roughly x:−4..4, z:−3..3. Spread them out onto the
 // 40×40 concept grid so nodes aren't bunched at the origin.
 export const SCENE_SCALE = 3;
+
+// A sensor with no update for this long (≈ 8 missed 500 ms ticks) transitions to
+// OFFLINE. Evaluated in the R3F render loop (~1 Hz), never in a timer.
+export const OFFLINE_AFTER_MS = 4000;

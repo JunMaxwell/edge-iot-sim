@@ -1,11 +1,10 @@
 const GRID_SIZE = 40;
 const GRID_DIVISIONS = 40;
-const GRID_CENTER_COLOR = "#334155";
-const GRID_LINE_COLOR = "#1e293b";
-const FLOOR_COLOR = "#0f172a";
+const GRID_CENTER_COLOR = "#94a3b8";
+const GRID_LINE_COLOR = "#e2e8f0";
+const FLOOR_COLOR = "#f8fafc";
 
-// Floor grid + a dark plane just beneath it, sized to the concept's 40×40 grid.
-// (Glass walls + zone tinting are deferred Phase 4 polish.)
+// Floor grid + a light plane beneath it, matching the concept's light theme.
 export function FacilityFloor() {
   return (
     <group>

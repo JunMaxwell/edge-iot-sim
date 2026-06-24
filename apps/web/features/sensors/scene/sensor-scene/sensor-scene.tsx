@@ -6,12 +6,15 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useSensorStore } from "../../sensor-store";
 import { FacilityFloor } from "../facility-floor/facility-floor";
+import { FacilityWalls } from "../facility-walls/facility-walls";
 import { SceneLighting } from "../scene-lighting/scene-lighting";
 import { SensorNode } from "../sensor-node/sensor-node";
+import { StalenessWatcher } from "../staleness-watcher/staleness-watcher";
+import { ZoneRegions } from "../zone-regions/zone-regions";
 
 const CAMERA_POSITION: [number, number, number] = [20, 25, 30];
 const CAMERA_FOV = 45;
-const FOG_COLOR = "#0f172a";
+const FOG_COLOR = "#f8fafc";
 const FOG_DENSITY = 0.02;
 const MAX_POLAR_ANGLE = Math.PI / 2 - 0.05; // never orbit below the floor
 const MIN_DISTANCE = 10;
@@ -35,6 +38,9 @@ export function SensorScene() {
       <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
       <SceneLighting />
       <FacilityFloor />
+      <ZoneRegions />
+      <FacilityWalls />
+      <StalenessWatcher />
       {sensorIds.map((id) => (
         <SensorNode key={id} id={id} />
       ))}

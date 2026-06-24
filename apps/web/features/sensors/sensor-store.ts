@@ -1,4 +1,4 @@
-import { AlertEvent, SensorState } from "@repo/shared-types";
+import { AlertEvent, SensorState, SensorStatus } from "@repo/shared-types";
 import { create } from "zustand";
 
 import { HISTORY_LENGTH, MAX_ALERTS, STATUS_SEVERITY } from "./constants";
@@ -15,6 +15,10 @@ interface SensorStoreState {
   applyUpdate: (state: SensorState) => void;
   selectSensor: (id: string) => void;
   clearSensor: () => void;
+  // Transitions a sensor to OFFLINE and emits an alert. `now` is passed in from
+  // the staleness watcher so Date.now() is called once per sweep, not inside the
+  // reducer (workflow scripts disallow Date.now() inside pure functions).
+  markOffline: (id: string, now: number) => void;
 }
 
 // Monotonic counter so alert ids stay unique even when two updates share a
@@ -79,4 +83,26 @@ export const useSensorStore = create<SensorStoreState>((set) => ({
 
   selectSensor: (id) => set({ selectedSensorId: id }),
   clearSensor: () => set({ selectedSensorId: null }),
+
+  markOffline: (id, now) =>
+    set((prev) => {
+      const sensor = prev.sensors[id];
+      // Guard: only transition once, never re-raise if already OFFLINE.
+      if (!sensor || sensor.status === SensorStatus.OFFLINE) return prev;
+      const offlineSensor: SensorState = { ...sensor, status: SensorStatus.OFFLINE };
+      const alert: AlertEvent = {
+        id: `${id}-offline-${alertSeq++}`,
+        sensorId: id,
+        type: sensor.type,
+        fromStatus: sensor.status,
+        toStatus: SensorStatus.OFFLINE,
+        value: sensor.value,
+        unit: sensor.unit,
+        timestamp: now,
+      };
+      return {
+        sensors: { ...prev.sensors, [id]: offlineSensor },
+        alerts: [alert, ...prev.alerts].slice(0, MAX_ALERTS),
+      };
+    }),
 }));
