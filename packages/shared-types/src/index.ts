@@ -52,3 +52,15 @@ export const SOCKET_EVENTS = {
   SENSOR_UPDATE: "sensor:update",
   SENSOR_BATCH: "sensor:batch",
 } as const;
+
+// RabbitMQ topology — single source of truth shared by the simulator (publisher)
+// and the API (consumer). A topic exchange lets the API subscribe selectively by
+// pattern (e.g. "sensor.hvac.*").
+export const IOT_EXCHANGE = "iot.sensors";
+
+export enum RoutingKey {
+  HVAC_TEMPERATURE = "sensor.hvac.temperature",
+  HVAC_HUMIDITY = "sensor.hvac.humidity",
+  FLOOR_MOTION = "sensor.floor.motion",
+  FLOOR_MACHINE_STATUS = "sensor.floor.machine_status",
+}
