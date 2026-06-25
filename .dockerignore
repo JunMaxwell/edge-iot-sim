@@ -1,6 +1,7 @@
 node_modules
-apps/web
-.next
+apps/web/src
+apps/web/public
+apps/web/.next
 dist
 .turbo
 .git

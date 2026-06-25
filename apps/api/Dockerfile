@@ -5,7 +5,7 @@ COPY package.json bun.lock ./
 COPY packages/ packages/
 COPY apps/api/ apps/api/
 COPY apps/simulator/package.json apps/simulator/package.json
-RUN mkdir -p apps/web && echo '{"name":"@repo/web","version":"0.0.0","private":true}' > apps/web/package.json
+COPY apps/web/package.json apps/web/package.json
 
 RUN bun install --frozen-lockfile
 
