@@ -2,6 +2,8 @@
 
 A real-time 3D facility dashboard that ingests high-frequency IoT sensor data through RabbitMQ, bridges it over Socket.IO, and renders live sensor states on a Three.js scene.
 
+**Live demo → <https://edge-iot-sim.ydothien.work>**
+
 ---
 
 ## Architecture
@@ -31,7 +33,7 @@ A real-time 3D facility dashboard that ingests high-frequency IoT sensor data th
 edge-iot-dashboard/
 ├── apps/
 │   ├── web/          Next.js 15 + React Three Fiber + Zustand + socket.io-client
-│   ├── api/          Express + Socket.IO + amqplib (edge broker)
+│   ├── api/          NestJS + Socket.IO + amqplib (edge broker)
 │   └── simulator/    Bun + amqplib (IoT data generator)
 ├── packages/
 │   ├── shared-types/ SensorPayload, SensorState, deriveStatus(), SOCKET_EVENTS
@@ -43,10 +45,54 @@ edge-iot-dashboard/
 
 ---
 
+## Production
+
+The `web` app is deployed on Vercel. The `api`, `simulator`, RabbitMQ, and MongoDB run on a private VPS via `docker-compose.stack.yml`. Trigger a production deploy manually with:
+
+```bash
+cd apps/web && vercel deploy --prod
+```
+
+---
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.3
-- [Docker](https://www.docker.com) (for RabbitMQ)
+- [Docker](https://www.docker.com) (for RabbitMQ and MongoDB)
+
+---
+
+## Dashboard Features
+
+- **3D facility scene** — sensor nodes rendered as instanced meshes (one draw call) positioned in world space across HVAC, security, power, and server zones
+- **Live color coding** — orb color shifts green → amber → red as sensor status transitions `normal → warning → critical`; grey when `offline`
+- **Zone panels** — per-zone summary of node count and worst-case status
+- **Device HUD** — click any sensor node to inspect its live reading, unit, routing key, and last-updated timestamp
+- **Alert feed** — scrolling log of threshold-crossing events with relative timestamps
+- **Sparkline** — mini history chart per sensor showing the last N readings
+- **Staleness detection** — nodes flip to `offline` automatically if no update arrives within the staleness window
+- **Connection overlay** — blocks the scene with a reconnecting state if the Socket.IO link drops
+
+---
+
+## Environment Variables
+
+Copy the root `.env.example` and each app's `.env.example` before running locally:
+
+```bash
+cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+Key variables:
+
+| Variable | App | Default |
+|---|---|---|
+| `NEXT_PUBLIC_SOCKET_URL` | web | `http://localhost:4000` |
+| `CORS_ORIGIN` | api | `http://localhost:3003` |
+| `MONGODB_URI` | api | `mongodb://localhost:27017/iot` |
+| `RABBITMQ_URL` | api, simulator | `amqp://guest:guest@localhost:5672` |
 
 ---
 
@@ -118,9 +164,9 @@ Status thresholds are defined in `shared-types/src/index.ts` and used by the api
 | Phase | Status | Description |
 | ------- | -------- | -------- |
 | 1 — Infrastructure | ✅ | Turborepo scaffold, shared types, Docker Compose |
-| 2 — Data pipeline | 🔲 | Simulator publishes to RabbitMQ; api consumes and logs |
-| 3 — The bridge | 🔲 | api broadcasts via Socket.IO; web receives events |
-| 4 — Spatial render | 🔲 | R3F scene, sensor meshes, live color updates |
+| 2 — Data pipeline | ✅ | Simulator publishes to RabbitMQ; api consumes and logs |
+| 3 — The bridge | ✅ | api broadcasts via Socket.IO; web receives events |
+| 4 — Spatial render | ✅ | R3F scene, sensor meshes, live color updates |
 
 ---
 
