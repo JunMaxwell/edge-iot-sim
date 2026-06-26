@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd ../.. && turbo run build --filter=@repo/web",
+  "installCommand": "cd ../.. && bun install"
+}
