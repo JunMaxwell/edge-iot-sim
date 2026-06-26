@@ -3,6 +3,7 @@ import { SimulatorPublisher } from "./publisher";
 async function main(): Promise<void> {
   const publisher = new SimulatorPublisher();
   await publisher.connect();
+  await publisher.listenForControl();
   publisher.start();
 
   // Graceful shutdown so RabbitMQ sees the connection close cleanly.

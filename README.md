@@ -30,16 +30,17 @@ A real-time 3D facility dashboard that ingests high-frequency IoT sensor data th
 ## Monorepo Structure
 
 ```text
-edge-iot-dashboard/
+edge-iot-sim/
 ├── apps/
-│   ├── web/          Next.js 15 + React Three Fiber + Zustand + socket.io-client
-│   ├── api/          NestJS + Socket.IO + amqplib (edge broker)
-│   └── simulator/    Bun + amqplib (IoT data generator)
+│   ├── web/                  Next.js 15 + React Three Fiber + Zustand + socket.io-client
+│   ├── api/                  NestJS + Socket.IO + amqplib (edge broker)
+│   └── simulator/            Bun + amqplib (IoT data generator)
 ├── packages/
-│   ├── shared-types/ SensorPayload, SensorState, deriveStatus(), SOCKET_EVENTS
-│   ├── tsconfig/     base.json + nextjs.json
+│   ├── shared-types/         SensorPayload, SensorState, deriveStatus(), SOCKET_EVENTS
+│   ├── tsconfig/             base.json + nextjs.json
 │   └── eslint-config/
-├── docker-compose.yml
+├── docker-compose.stack.yml  production stack (pre-built images from GHCR)
+├── docker-compose.local.yml  local full-stack build (all services from source)
 └── turbo.json
 ```
 
@@ -52,6 +53,25 @@ The `web` app is deployed on Vercel. The `api`, `simulator`, RabbitMQ, and Mongo
 ```bash
 cd apps/web && vercel deploy --prod
 ```
+
+---
+
+## Running the full stack with Docker (local)
+
+`docker-compose.local.yml` builds every service from source and wires them together — no Vercel, no pre-built images. Use this to test the entire pipeline locally or in CI before pushing.
+
+```bash
+docker compose -f docker-compose.local.yml up --build
+```
+
+| Service             | URL                                       |
+| ------------------- | ----------------------------------------- |
+| web (3D dashboard)  | <http://localhost:3003>                   |
+| api (Socket.IO)     | <http://localhost:4000>                   |
+| RabbitMQ management | <http://localhost:15672> (guest / guest)  |
+| MongoDB             | `localhost:27017`                         |
+
+> **`NEXT_PUBLIC_SOCKET_URL`** is baked into the Next.js bundle at build time. The default (`http://localhost:4000`) works as long as the browser and the API are both on your local machine. Override with `NEXT_PUBLIC_SOCKET_URL=http://<your-ip>:4000` if running Docker on a remote host.
 
 ---
 
@@ -87,12 +107,12 @@ cp apps/web/.env.example apps/web/.env
 
 Key variables:
 
-| Variable | App | Default |
-|---|---|---|
-| `NEXT_PUBLIC_SOCKET_URL` | web | `http://localhost:4000` |
-| `CORS_ORIGIN` | api | `http://localhost:3003` |
-| `MONGODB_URI` | api | `mongodb://localhost:27017/iot` |
-| `RABBITMQ_URL` | api, simulator | `amqp://guest:guest@localhost:5672` |
+| Variable                  | App            | Default                               |
+| ------------------------- | -------------  | ------------------------------------- |
+| `NEXT_PUBLIC_SOCKET_URL`  | web            | `http://localhost:4000`               |
+| `CORS_ORIGIN`             | api            | `http://localhost:3003`               |
+| `MONGODB_URI`             | api            | `mongodb://localhost:27017/iot`       |
+| `RABBITMQ_URL`            | api, simulator | `amqp://guest:guest@localhost:5672`   |
 
 ---
 
