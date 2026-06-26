@@ -5,7 +5,14 @@ import {
   OnModuleInit,
 } from "@nestjs/common";
 import * as amqp from "amqplib";
-import { IOT_DLQ, IOT_DLX, IOT_EXCHANGE } from "@repo/shared-types";
+import {
+  ControlMessage,
+  IOT_CONTROL_EXCHANGE,
+  IOT_DLQ,
+  IOT_DLX,
+  IOT_EXCHANGE,
+  SimulatorCommand,
+} from "@repo/shared-types";
 import { withRetry } from "./utils/retry";
 
 import {
@@ -46,8 +53,10 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
     await this.channel?.assertExchange(IOT_DLX, "topic", { durable: true });
     await this.channel?.assertQueue(IOT_DLQ, { durable: true });
     await this.channel?.bindQueue(IOT_DLQ, IOT_DLX, "#");
+    await this.channel?.assertExchange(IOT_CONTROL_EXCHANGE, "fanout", { durable: false });
     this.logger.log(`Connected to ${this.url}, exchange "${IOT_EXCHANGE}" ready`);
     this.logger.log(`DLQ "${IOT_DLQ}" bound to DLX "${IOT_DLX}"`);
+    this.logger.log(`Control exchange "${IOT_CONTROL_EXCHANGE}" ready`);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -62,6 +71,22 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
       this.channel = null;
       this.connection = null;
     }
+  }
+
+  // Publish a wake/sleep command to the fanout control exchange.
+  publishControl(command: SimulatorCommand): void {
+    if (!this.channel) {
+      this.logger.warn(`Cannot publish control signal "${command}": channel not ready`);
+      return;
+    }
+    const message: ControlMessage = { command };
+    this.channel.publish(
+      IOT_CONTROL_EXCHANGE,
+      "",
+      Buffer.from(JSON.stringify(message)),
+      { persistent: false, contentType: "application/json" },
+    );
+    this.logger.log(`Control signal published: ${command}`);
   }
 
   // Assert a durable queue, bind it to the exchange with the given pattern, and

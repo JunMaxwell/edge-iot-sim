@@ -108,6 +108,19 @@ export const IOT_EXCHANGE = "iot.sensors";
 export const IOT_DLX = "iot.dlx";
 export const IOT_DLQ = "iot.dlq";
 
+// Control plane — wake/sleep signals broadcast from the API to compute layers.
+// Fanout so any future subscriber auto-receives all commands without routing keys.
+export const IOT_CONTROL_EXCHANGE = "iot.control";
+
+export enum SimulatorCommand {
+  SLEEP = "sleep",
+  WAKE = "wake",
+}
+
+export interface ControlMessage {
+  command: SimulatorCommand;
+}
+
 export enum RoutingKey {
   HVAC_TEMPERATURE = "sensor.hvac.temperature",
   HVAC_HUMIDITY = "sensor.hvac.humidity",

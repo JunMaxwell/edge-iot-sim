@@ -1,5 +1,10 @@
 import * as amqp from "amqplib";
-import { IOT_EXCHANGE } from "@repo/shared-types";
+import {
+  ControlMessage,
+  IOT_CONTROL_EXCHANGE,
+  IOT_EXCHANGE,
+  SimulatorCommand,
+} from "@repo/shared-types";
 
 import {
   BASE_BACKOFF_MS,
@@ -14,7 +19,8 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Publishes a payload for every fixture on a fixed interval into the iot.sensors
-// topic exchange, keyed by each fixture's routing key.
+// topic exchange, keyed by each fixture's routing key. Supports pause/resume via
+// the iot.control fanout exchange so the API can silence it when no clients watch.
 export class SimulatorPublisher {
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
@@ -70,6 +76,53 @@ export class SimulatorPublisher {
     );
 
     this.timer = setInterval(() => this.tick(), this.emitIntervalMs);
+  }
+
+  // Pause the emit loop without closing the connection.
+  pause(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+      console.log("[publisher] sleeping — emit loop paused");
+    }
+  }
+
+  // Resume the emit loop. No-op if already running.
+  resume(): void {
+    if (!this.channel) {
+      console.warn("[publisher] cannot resume: not connected");
+      return;
+    }
+    if (this.timer) return;
+    this.timer = setInterval(() => this.tick(), this.emitIntervalMs);
+    console.log("[publisher] awake — emit loop resumed");
+  }
+
+  // Bind an exclusive transient queue to the fanout control exchange and act on
+  // WAKE / SLEEP commands published by the API gateway.
+  async listenForControl(): Promise<void> {
+    if (!this.channel) {
+      throw new Error("Cannot listen for control before connect() succeeds");
+    }
+    const channel = this.channel;
+
+    await channel.assertExchange(IOT_CONTROL_EXCHANGE, "fanout", { durable: false });
+    const { queue } = await channel.assertQueue("", { exclusive: true });
+    await channel.bindQueue(queue, IOT_CONTROL_EXCHANGE, "");
+
+    await channel.consume(queue, (msg) => {
+      if (!msg) return;
+      try {
+        const { command } = JSON.parse(msg.content.toString()) as ControlMessage;
+        if (command === SimulatorCommand.SLEEP) this.pause();
+        else if (command === SimulatorCommand.WAKE) this.resume();
+      } catch {
+        console.warn("[publisher] failed to parse control message");
+      }
+      channel.ack(msg);
+    });
+
+    console.log("[publisher] control listener ready");
   }
 
   private tick(): void {
