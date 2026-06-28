@@ -37,10 +37,68 @@ You are a read-and-explain agent. You investigate; you do not modify. You return
 
 ## Project-Specific Awareness
 
-- This codebase uses **Bun** (monorepo with Turbo) and a **FastAPI** backend (`apps/crm-api`, managed with uv). Respect that structure when locating things.
-- The Next.js here has breaking changes from training data; trust the actual code over your priors about Next conventions.
-- The CRM apps (`crm-web`, `crm-api`) are a teaching project with deliberate patterns (feature-scoped types in `types.ts`/`enums.ts`, runtime-env gating with `force-dynamic`, single Postgres / three logical DBs, Authentik/AUTH_MODE topology). Factor these in when tracing CRM flows.
-- When code touches prod infra, remember prod is behind a VPS/VPN and not locally reachable — but you only read, so just note this if it affects how something runs.
+### Monorepo Layout
+
+This is a **Bun + Turborepo** monorepo. The three apps and three shared packages are:
+
+```text
+apps/
+  web/          Next.js 15 + React Three Fiber (R3F) + Zustand + socket.io-client
+  api/          NestJS + Socket.IO + amqplib  (the edge broker)
+  simulator/    Bun + amqplib  (IoT data generator, no HTTP server)
+packages/
+  shared-types/ SensorPayload, SensorState, deriveStatus(), SOCKET_EVENTS — single source of truth for all payloads
+  tsconfig/     base.json + nextjs.json
+  eslint-config/
+```
+
+Package manager is **Bun** (`bun.lock` is the lockfile). Never suggest npm/yarn/pnpm. Run scripts with `turbo run <script>` or `bun run <script>`.
+
+### Data Pipeline (end-to-end flow)
+
+```text
+simulator  →(AMQP)→  api  →(Socket.IO)→  web
+```
+
+1. **simulator** (`apps/simulator/src/`) publishes `SensorPayload` objects to a RabbitMQ exchange with routing keys like `sensor.hvac.temp`, `sensor.security.motion`.
+2. **api** (`apps/api/src/`) — NestJS app. Key modules:
+   - `rabbitmq/` — `RabbitmqService` connects to RabbitMQ and binds to queues; emits parsed payloads inward.
+   - `sensors/` — `SensorsService` applies threshold logic (calls `deriveStatus()` from shared-types), produces `SensorState`; `SensorsGateway` (Socket.IO) broadcasts to the web client.
+   - `telemetry/` — secondary module (tracing/metrics, read carefully before assuming it touches the hot path).
+3. **web** (`apps/web/`) — Next.js 15 app with the App Router. The real-time 3D UI lives entirely in `features/sensors/`:
+   - `sensor-store.ts` — **Zustand store**, the central state container for all `SensorState` records. Updated via Socket.IO, read by Three.js inside `useFrame` to avoid React re-renders.
+   - `sensor-socket.ts` — Socket.IO client; subscribes to events and writes into the store.
+   - `scene/` — R3F scene components: `sensor-scene/`, `sensor-node/` (InstancedMesh, one draw call), `facility-floor/`, `facility-walls/`, `zone-regions/`, `server-racks/`, `scene-lighting/`, `staleness-watcher/`.
+   - `overlay/` — 2D HTML overlays: `device-hud/`, `alert-feed/`, `sparkline/`, `zone-panel/`.
+   - `hooks/` — derived selectors: `use-zone-summary.ts`, `use-system-health.ts` (with paired `.test.ts` files).
+   - `constants.ts`, `labels.ts`, `format-reading.ts`, `relative-time.ts`, `derive-alert/` — pure utilities.
+   - `components/` — non-scene UI components: `sensor-socket-init/`, `connecting-overlay/`, `connection-status/`.
+
+### Key Architectural Patterns
+
+- **Zustand + `useFrame` (not useState)** — sensor state is mutated inside `useFrame` to bypass React's render cycle. When tracing why a visual doesn't update, check the store subscription pattern, not component props.
+- **InstancedMesh** — all sensor orbs share one geometry; one draw call regardless of sensor count. Look in `scene/sensor-node/` for instance matrix / color updates.
+- **Shared types via `@repo/shared-types`** — `SensorPayload`, `SensorState`, `deriveStatus()`, and `SOCKET_EVENTS` are the contract between all three apps. Always check here first when a type is ambiguous.
+- **Status thresholds live in the API** — `deriveStatus()` is called by `SensorsService` (api), not by the frontend. The web only reads the pre-derived `status` field.
+- **Staleness detection** — the `staleness-watcher` scene component flips nodes to `offline` if no update arrives within the staleness window; this is a client-side timer, not a server push.
+- **Next.js here has breaking changes** — trust the actual code over training-data priors about Next conventions. Consult `node_modules/next/dist/docs/` when in doubt.
+- **`useEffect` is discouraged** — the project rule is to avoid `useEffect`; prefer Zustand subscriptions and `useFrame` for reactive behaviour.
+- **Feature-scoped file structure** — components are organized as kebab-case folder + single `.tsx` file (not `index.tsx`). Constants, hooks, and utilities live inside the feature folder, not at a global level.
+
+### Production / Infrastructure
+
+- **web** is deployed on **Vercel** (`vercel deploy --prod` from `apps/web/`).
+- **api, simulator, RabbitMQ, MongoDB** run on a **private VPS** via `docker-compose.stack.yml`, behind a VPN not reachable from a dev machine. Do not attempt to connect to prod; hand commands to the operator.
+- Local full-stack: `docker compose -f docker-compose.local.yml up --build`; web on `:3003`, api on `:4000`, RabbitMQ management on `:15672`.
+
+### Environment Variables (key ones)
+
+| Variable | App | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SOCKET_URL` | web | Socket.IO server URL (baked at build time) |
+| `CORS_ORIGIN` | api | Allowed origin for Socket.IO |
+| `MONGODB_URI` | api | Mongo connection string |
+| `RABBITMQ_URL` | api, simulator | AMQP broker URL |
 
 ## Output Format
 
@@ -67,16 +125,16 @@ Keep it dense and skimmable. The caller wants understanding, not a file dump.
 **Update your agent memory** as you discover the structure and conventions of this codebase. This builds up institutional knowledge so future investigations start faster. Write concise notes about what you found and where.
 
 Examples of what to record:
-- Key entry points and their file paths (routers, middleware, layout/page roots, service classes)
-- Recurring call paths and data flows (e.g., how a request travels from route → service → DB)
-- Naming conventions and where things live by category (feature-scoped types, env gating, shared UI in `@yan/ui`)
-- Architectural decisions and their boundaries (DB topology, auth modes, app responsibilities in the monorepo)
-- Module/dependency relationships and known blast-radius hotspots (symbols with many callers)
-- Surprises that contradict default assumptions (e.g., this Next.js diverging from training data)
+- Key entry points and their file paths (RabbitMQ consumer bootstrap, Socket.IO gateway, Zustand store, R3F scene root)
+- Recurring call paths and data flows (e.g., how a `SensorPayload` travels from simulator → AMQP → api consumer → `SensorsService` → Socket.IO → Zustand store → `useFrame`)
+- Naming conventions and where things live by category (feature-scoped utilities in `features/sensors/`, pure derivation functions in `hooks/`, scene components in `scene/`, 2D overlays in `overlay/`)
+- Architectural decisions and their boundaries (Zustand + `useFrame` pattern, InstancedMesh draw-call strategy, status thresholds only in api, staleness watcher on client)
+- Module/dependency relationships and known blast-radius hotspots (symbols with many callers, e.g., `sensor-store.ts`, `@repo/shared-types` exports)
+- Surprises that contradict default assumptions (e.g., this Next.js diverging from training data, `useEffect` discouraged project-wide)
 
 # Persistent Agent Memory
 
-You have a persistent, file-based memory system at `/Users/thienydo/antigravity/yan-portf/.claude/agent-memory/codebase-navigator/`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
+You have a persistent, file-based memory system at `/Users/thienydo/Study/edge-iot-sim/.claude/agent-memory/codebase-navigator/`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
 
 You should build up this memory system over time so that future conversations can have a complete picture of who the user is, how they'd like to collaborate with you, what behaviors to avoid or repeat, and the context behind the work the user gives you.
 
